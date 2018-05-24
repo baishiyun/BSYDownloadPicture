@@ -1,8 +1,8 @@
 Pod::Spec.new do |s|
   s.name         = "BSYDownloadPicture" 
-  s.version      = "1.0.0"     
+  s.version      = "1.1.0"     
   s.license      = "MIT"       
-  s.summary      = "图片下载工具，还未做图片的缓存处理，后面会有具体的完善，还希望大家多多支持,多多Star，谢谢"
+  s.summary      = "图片下载工具，优化缓存处理，后面会有具体的完善，还希望大家多多支持,多多Star，谢谢"
 
   s.homepage     = "https://github.com/baishiyun/BSYDownloadPicture" 
   s.source       = { :git => "https://github.com/baishiyun/BSYDownloadPicture.git", :tag => "#{s.version}" }

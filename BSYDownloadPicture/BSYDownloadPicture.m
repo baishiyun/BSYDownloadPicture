@@ -6,6 +6,8 @@
 //  Copyright © 2018年 BSY.com. All rights reserved.
 //
 #import "BSYDownloadPicture.h"
+#import "BSYDownloadPath.h"
+
 @implementation BSYDownloadPicture
 
 
@@ -31,20 +33,31 @@
  */
 -(void)bsy_DownloadPictureWithUrl:(NSString *)imageUrl succeedCallBack:(void(^)(UIImage *image))succeedCallBack    failCallBack:(void(^)(void))failCallBack
 {
+
     if ([imageUrl isKindOfClass:[NSString class]]&&[imageUrl length]>0) {
         [self existimageUrl:imageUrl succeedCallBack:^(UIImage *image) {
-            if (succeedCallBack) {
-                succeedCallBack(image);
-            }
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (succeedCallBack) {
+                    succeedCallBack(image);
+                }
+            });
+
         } failCallBack:^{
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (failCallBack) {
+                    failCallBack();
+                }
+            });
+
+        }];
+    }else{
+        dispatch_async(dispatch_get_main_queue(), ^{
             if (failCallBack) {
                 failCallBack();
             }
-        }];
-    }else{
-        if (failCallBack) {
-            failCallBack();
-        }
+        });
 
     }
 }
@@ -58,21 +71,46 @@
  */
 -(void)existimageUrl:(NSString *)imageUrl succeedCallBack:(void(^)(UIImage *image))succeedCallBack    failCallBack:(void(^)(void))failCallBack
 {
-
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            [self downloadImageWithimageUrl:imageUrl succeedCallBack:^(UIImage *image) {
-                if (succeedCallBack) {
-                    succeedCallBack(image);
+
+            NSString *imagePath = [BSYDownloadPath getBSYDownloadPicturePath];
+            NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithContentsOfFile:imagePath];
+            if ([[dict allKeys] containsObject:imageUrl]) {
+                UIImage *image = [BSYDownloadPath getBSYDownloadPictureImageUrl:imagePath];
+                if (image) {
+                        if (succeedCallBack) {
+                            succeedCallBack(image);
+                        }
+                }else{
+                    //没有存的图片去下载
+                    [self downloadImageWithimageUrl:imageUrl succeedCallBack:^(UIImage *image) {
+                        if (succeedCallBack) {
+                            succeedCallBack(image);
+                        }
+                        [BSYDownloadPath saveBSYDownloadPictureWithImage:image ImageUrl:imageUrl];
+                    } failCallBack:^{
+                        if (failCallBack) {
+                            failCallBack();
+                        }
+                    }];
+
                 }
-            } failCallBack:^{
-                if (failCallBack) {
-                    failCallBack();
-                }
-            }];
+            }else{
+                //没有存的图片去下载
+                [self downloadImageWithimageUrl:imageUrl succeedCallBack:^(UIImage *image) {
+                    if (succeedCallBack) {
+                        succeedCallBack(image);
+                    }
+                    [BSYDownloadPath saveBSYDownloadPictureWithImage:image ImageUrl:imageUrl];
+                } failCallBack:^{
+                    if (failCallBack) {
+                        failCallBack();
+                    }
+                }];
+
+            }
         });
 }
-
-
 
 /**
  下载图片的具体实现
@@ -85,8 +123,6 @@
 
     NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:imageUrl]];
     UIImage *image = [UIImage imageWithData:data];
-    dispatch_async(dispatch_get_main_queue(), ^{
-
         if (image) {
             if (succeedCallBack) {
                 succeedCallBack(image);
@@ -96,8 +132,27 @@
                 failCallBack();
             }
         }
-
-    });
-
+}
+/**
+ 删除所有缓存的图片
+ @param succeedCallBack 删除成功
+ @param failCallBack 删除失败
+ */
+-(void)bsy_removeDownloadPictureSucceedCallBack:(void(^)(BOOL removeBool))succeedCallBack    failCallBack:(void(^)(BOOL removeBool))failCallBack
+{
+    BOOL removeBool =  [BSYDownloadPath removeBSYDownloadPictureImage];
+    if (removeBool==true) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (succeedCallBack) {
+                succeedCallBack(removeBool);
+            }
+        });
+    }else{
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (failCallBack) {
+                failCallBack(removeBool);
+            }
+        });
+    }
 }
 @end
